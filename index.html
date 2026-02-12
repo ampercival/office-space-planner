@@ -15,16 +15,27 @@
 <body>
     <div class="app-container">
         <header>
-            <div class="logo">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                    <line x1="8" y1="21" x2="16" y2="21"></line>
-                    <line x1="12" y1="17" x2="12" y2="21"></line>
-                </svg>
-                <h1>Office Space Planner</h1>
+            <div class="header-content">
+                <div class="logo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                    </svg>
+                    <h1>Office Space Planner</h1>
+                </div>
+                <div class="header-actions">
+                    <button id="saveBtn" class="secondary-btn small-btn" title="Save to Browser">
+                        Save
+                    </button>
+                    <button id="loadBtn" class="secondary-btn small-btn" title="Load from Browser">
+                        Load
+                    </button>
+                    <span id="saveStatus" class="save-status"></span>
+                </div>
             </div>
-            <p class="subtitle">Monte Carlo Simulation for Office Space Planning</p>
+            <p class="subtitle">Optimize your hybrid workplace capacity with data-driven simulations.</p>
         </header>
 
         <main class="layout-grid">
@@ -144,14 +155,33 @@
                     BY-NC 4.0</a>;
                 please credit the source for any non-commercial use. The source code
                 is available on
-                <a href="https://github.com/ampercival/office-space-planner.git" rel="noopener"
-                    target="_blank">GitHub</a>.
+                <a href="https://github.com/ampercival/office-space-planner" rel="noopener" target="_blank">GitHub</a>.
             </p>
             <p>
                 © <span id="year"></span> Aaron Percival. All rights reserved.
             </p>
         </footer>
     </div>
+
+    <!-- Save/Load Modal -->
+    <div id="modalOverlay" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitle">Save Simulation</h3>
+                <button id="modalCloseBtn" class="close-btn">&times;</button>
+            </div>
+
+            <div id="modalBody" class="modal-body">
+                <!-- Injected via JS -->
+            </div>
+
+            <div class="modal-footer">
+                <button id="modalCancelBtn" class="secondary-btn">Cancel</button>
+                <button id="modalConfirmBtn" class="primary-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 

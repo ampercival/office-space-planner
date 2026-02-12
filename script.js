@@ -16,12 +16,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const customPercentInput = document.getElementById('customPercentInput');
     const statsGrid = document.getElementById('statsGrid');
 
+    // Header Actions
+    const saveBtn = document.getElementById('saveBtn');
+    const loadBtn = document.getElementById('loadBtn');
+    // Note: loadInput is no longer needed
+
     // Set Footer Year
     document.getElementById("year").textContent = new Date().getFullYear();
 
     // ---- State ----
     let outputChart = null;
     let storedDistribution = null; // Store results for post-run analysis
+    let storedResults = null; // Store full result object for saving
     let numSimulationsRun = 0;
 
     // ---- Event Listeners ----
@@ -60,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Store for later
         storedDistribution = simulationResults.distribution;
+        storedResults = simulationResults; // Save full object
         numSimulationsRun = numSimulations;
 
         // Reset UI
@@ -86,6 +93,200 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         addCustomStat(percent);
+    });
+
+    // -- Save / Load Handlers (Modal) --
+
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+    const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+
+    let currentModalMode = null; // 'save' or 'load'
+
+    // Load saved simulations from Storage
+    function getSavedSimulations() {
+        const json = localStorage.getItem('officeSpaceSimulations');
+        return json ? JSON.parse(json) : [];
+    }
+
+    function saveSimulations(list) {
+        localStorage.setItem('officeSpaceSimulations', JSON.stringify(list));
+    }
+
+    // Modal Controls
+    function openModal(mode) {
+        currentModalMode = mode;
+        modalOverlay.classList.remove('hidden');
+
+        // Reset Footer Buttons
+        modalConfirmBtn.classList.remove('hidden');
+        modalConfirmBtn.textContent = (mode === 'save') ? 'Save' : 'Load';
+
+        if (mode === 'save') {
+            modalTitle.textContent = "Save Simulation";
+            modalConfirmBtn.onclick = handleSaveConfirm;
+
+            // Generate default name
+            const dateStr = new Date().toISOString().slice(0, 10);
+            const employees = document.getElementById('employees').value;
+            const defaultName = `Sim ${dateStr} - ${employees} Staff`;
+
+            modalBody.innerHTML = `
+               <label for="saveNameInput" style="display:block; margin-bottom:0.5rem; font-weight:600;">Name this simulation:</label>
+               <input type="text" id="saveNameInput" class="full-width-input" value="${defaultName}" />
+           `;
+            setTimeout(() => document.getElementById('saveNameInput').focus(), 100);
+
+        } else if (mode === 'load') {
+            modalTitle.textContent = "Load Simulation";
+            modalConfirmBtn.classList.add('hidden'); // Hide confirm, list items are clickable
+            renderLoadList();
+        }
+    }
+
+    function closeModal() {
+        modalOverlay.classList.add('hidden');
+        currentModalMode = null;
+    }
+
+    function renderLoadList() {
+        const list = getSavedSimulations();
+        if (list.length === 0) {
+            modalBody.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No saved simulations found.</p>';
+            return;
+        }
+
+        modalBody.innerHTML = '';
+        const ul = document.createElement('div');
+
+        // Sort by date new -> old
+        list.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        list.forEach((sim, index) => {
+            const item = document.createElement('div');
+            item.className = 'saved-sim-item';
+
+            const dateDisplay = new Date(sim.timestamp).toLocaleString();
+
+            item.innerHTML = `
+                <div class="sim-info">
+                    <span class="sim-name">${sim.name}</span>
+                    <span class="sim-date">${dateDisplay}</span>
+                </div>
+                <button class="delete-btn" title="Delete" data-index="${index}">&times;</button>
+            `;
+
+            // Click to Load
+            item.onclick = (e) => {
+                if (e.target.classList.contains('delete-btn')) return;
+                loadSimulationData(sim.data);
+                closeModal();
+                showToast("Simulation Loaded!");
+            };
+
+            // Delete Handler
+            const delBtn = item.querySelector('.delete-btn');
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm(`Delete "${sim.name}"?`)) {
+                    // Need to find unique item to delete since index shifts
+                    // We rely on timestamp as unique ID here
+                    deleteSimulation(sim.timestamp);
+                }
+            };
+
+            ul.appendChild(item);
+        });
+
+        modalBody.appendChild(ul);
+    }
+
+    function deleteSimulation(timestamp) {
+        let list = getSavedSimulations();
+        list = list.filter(s => s.timestamp !== timestamp);
+        saveSimulations(list);
+        renderLoadList();
+    }
+
+    function handleSaveConfirm() {
+        const nameInput = document.getElementById('saveNameInput');
+        const name = nameInput.value.trim() || "Untitled Simulation";
+
+        const newSim = {
+            name: name,
+            timestamp: new Date().toISOString(),
+            data: {
+                inputs: {
+                    employees: document.getElementById('employees').value,
+                    daysInOffice: document.getElementById('daysInOffice').value,
+                    absenteeism: document.getElementById('absenteeism').value,
+                    simulations: document.getElementById('simulations').value
+                },
+                results: storedResults
+            }
+        };
+
+        const list = getSavedSimulations();
+        list.push(newSim);
+        saveSimulations(list);
+
+        closeModal();
+        showToast("Simulation Saved!");
+    }
+
+    function loadSimulationData(data) {
+        if (!data || !data.results || !data.results.distribution) return;
+
+        // Restore Inputs
+        if (data.inputs) {
+            document.getElementById('employees').value = data.inputs.employees || 1000;
+            document.getElementById('daysInOffice').value = data.inputs.daysInOffice || 4;
+            document.getElementById('absenteeism').value = data.inputs.absenteeism || 15;
+            document.getElementById('simulations').value = data.inputs.simulations || 10000;
+        }
+
+        // Restore State
+        storedResults = data.results;
+        storedDistribution = data.results.distribution;
+        numSimulationsRun = storedDistribution.length;
+
+        // Update UI
+        clearCustomStats();
+        updateStats(storedResults);
+        updateChart(storedDistribution);
+
+        document.getElementById('summaryCard').classList.remove('hidden');
+        document.getElementById('resultsSection').classList.remove('hidden');
+    }
+
+    function showToast(msg) {
+        const status = document.getElementById('saveStatus');
+        status.textContent = msg;
+        status.style.opacity = 1;
+        setTimeout(() => { status.style.opacity = 0; }, 2000);
+    }
+
+    // Modal Event Listeners
+    modalCloseBtn.onclick = closeModal;
+    modalCancelBtn.onclick = closeModal;
+    modalOverlay.onclick = (e) => {
+        if (e.target === modalOverlay) closeModal();
+    };
+
+    // Main Buttons
+    saveBtn.addEventListener('click', () => {
+        if (!storedResults) {
+            alert("Please run a simulation first.");
+            return;
+        }
+        openModal('save');
+    });
+
+    loadBtn.addEventListener('click', () => {
+        openModal('load');
     });
 
     // ---- Functions ----
@@ -202,9 +403,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function addCustomStat(percent) {
         // percentile index = Floor(total * (percent/100))
-        // We use floor usually, but for "covering X%" we might want to be safe.
-        // Let's use simple indexing logic: index = floor(N * P)
-
         let index = Math.floor(numSimulationsRun * (percent / 100));
         index = Math.max(0, Math.min(index, numSimulationsRun - 1));
 
