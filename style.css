@@ -362,6 +362,68 @@ small {
     text-decoration: underline;
 }
 
-.page-footer p {
-    margin: 0.5rem 0;
+/* Custom Analysis Styles */
+.custom-analysis-controls {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--border-color);
+}
+
+.custom-analysis-controls h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    color: var(--text-main);
+}
+
+.inline-input-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.input-wrapper {
+    position: relative;
+    display: inline-block;
+    max-width: 120px;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding-right: 2rem;
+    /* Space for "%" unit */
+}
+
+.input-wrapper .unit {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.secondary-btn {
+    background: white;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+    background: var(--surface-bg);
+    border-color: var(--primary-hover);
+    color: var(--primary-hover);
+}
+
+.hint-text {
+    color: var(--text-muted);
+    font-size: 0.875rem;
 }

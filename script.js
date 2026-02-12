@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // ---- DOM Elements ----
     const form = document.getElementById('simulationForm');
     const runBtn = document.getElementById('runBtn');
     const btnText = runBtn.querySelector('.btn-text');
@@ -10,14 +11,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressPercent = document.getElementById('progressPercent');
     const estimatedTime = document.getElementById('estimatedTime');
 
+    // Custom Analysis UI
+    const addCustomBtn = document.getElementById('addCustomBtn');
+    const customPercentInput = document.getElementById('customPercentInput');
+    const statsGrid = document.getElementById('statsGrid');
+
     // Set Footer Year
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // Chart instance
+    // ---- State ----
     let outputChart = null;
+    let storedDistribution = null; // Store results for post-run analysis
+    let numSimulationsRun = 0;
+
+    // ---- Event Listeners ----
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // Reset Custom Stats Area on new run
+        clearCustomStats();
 
         // UI Loading State
         runBtn.disabled = true;
@@ -45,6 +58,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update Chart
         updateChart(simulationResults.distribution);
 
+        // Store for later
+        storedDistribution = simulationResults.distribution;
+        numSimulationsRun = numSimulations;
+
         // Reset UI
         runBtn.disabled = false;
         btnText.textContent = 'Run Monte Carlo';
@@ -55,6 +72,23 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('summaryCard').classList.remove('hidden');
         document.getElementById('resultsSection').classList.remove('hidden');
     });
+
+    addCustomBtn.addEventListener('click', () => {
+        if (!storedDistribution) {
+            alert("Please run a simulation first.");
+            return;
+        }
+
+        const percent = parseFloat(customPercentInput.value);
+        if (isNaN(percent) || percent <= 0 || percent >= 100) {
+            alert("Please enter a valid percentage between 0 and 100.");
+            return;
+        }
+
+        addCustomStat(percent);
+    });
+
+    // ---- Functions ----
 
     async function runMonteCarloAsync(numEmployees, absenteeismRate, numSimulations, daysInOffice) {
         return new Promise(async (resolve) => {
@@ -75,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     for (let emp = 0; emp < numEmployees; emp++) {
                         // Determine scheduled days for this employee
-                        // We randomly pick 'daysInOffice' days from 0-4 (Mon-Fri)
                         const scheduledDays = getRandomDays(daysInOffice);
 
                         for (let day of scheduledDays) {
@@ -100,7 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const percentComplete = completedSims / numSimulations;
 
                 // Estimate remaining time
-                // Rate = ms per sim
                 const rate = elapsedOverall / completedSims;
                 const remainingSims = numSimulations - completedSims;
                 const timeRemainingMs = rate * remainingSims;
@@ -108,8 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateProgress(percentComplete, timeRemainingMs);
 
                 if (completedSims < numSimulations) {
-                    // Schedule next chunk
-                    // Use setTimeout to yield to main thread properly
                     setTimeout(processChunk, 0);
                 } else {
                     // Verify sorting and stats
@@ -150,7 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
         progressPercent.textContent = `${p}%`;
 
         if (remainingMs > 0) {
-            // Keep it human readable
             let timeStr = '';
             if (remainingMs < 1000) {
                 timeStr = '< 1s remaining';
@@ -165,33 +194,59 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateStats(results) {
-        // Animate numbers
         animateValue(document.getElementById('avgDailyOccupancy'), 0, Math.round(results.avgDailyOccupancy), 1000);
         animateValue(document.getElementById('avgPeakDesks'), 0, Math.round(results.avgPeak), 1000);
         animateValue(document.getElementById('p95Desks'), 0, results.p95, 1000);
         animateValue(document.getElementById('maxObserved'), 0, results.maxObserved, 1000);
     }
 
+    function addCustomStat(percent) {
+        // percentile index = Floor(total * (percent/100))
+        // We use floor usually, but for "covering X%" we might want to be safe.
+        // Let's use simple indexing logic: index = floor(N * P)
+
+        let index = Math.floor(numSimulationsRun * (percent / 100));
+        index = Math.max(0, Math.min(index, numSimulationsRun - 1));
+
+        const value = storedDistribution[index];
+
+        // Create HTML element
+        const div = document.createElement('div');
+        div.className = 'stat-item custom-stat';
+        div.style.borderColor = 'var(--primary)'; // Highlight custom ones
+        div.innerHTML = `
+            <span class="stat-label">Recommended Desks (${percent}%)</span>
+            <span class="stat-value">${value}</span>
+            <small>Covers ${percent}% of scenarios</small>
+        `;
+
+        statsGrid.appendChild(div);
+
+        // Scroll to it
+        div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function clearCustomStats() {
+        // Remove all elements with class 'custom-stat'
+        const customs = document.querySelectorAll('.custom-stat');
+        customs.forEach(el => el.remove());
+    }
+
     function updateChart(data) {
         const ctx = document.getElementById('histogramChart').getContext('2d');
-
-        // Process data for histogram
         const minVal = data[0];
         const maxVal = data[data.length - 1];
         const bins = {};
 
-        // Initialize bins
         for (let i = minVal; i <= maxVal; i++) {
             bins[i] = 0;
         }
 
-        // Count frequencies
         data.forEach(val => bins[val]++);
 
         const labels = Object.keys(bins);
         const frequencies = Object.values(bins);
 
-        // Destroy previous chart if exists
         if (outputChart) {
             outputChart.destroy();
         }
@@ -218,9 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        display: false
-                    },
+                    legend: { display: false },
                     tooltip: {
                         backgroundColor: '#111827',
                         padding: 12,

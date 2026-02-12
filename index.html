@@ -36,14 +36,14 @@
                         <div class="input-group">
                             <label for="employees">Total Employees</label>
                             <input type="number" id="employees" name="employees" value="1000" min="1" required>
-                            <small>Total number of staff assigned to this office.</small>
+                            <small>Total number of staff who need desks.</small>
                         </div>
 
                         <div class="input-group">
                             <label for="daysInOffice">Days in Office (Per Week)</label>
                             <input type="number" id="daysInOffice" name="daysInOffice" value="4" min="0" max="5"
                                 required>
-                            <small>Number of days an employee is scheduled to come in.</small>
+                            <small>Number of days an employee needs to come in to the office each week.</small>
                         </div>
 
                         <div class="input-group">
@@ -96,7 +96,7 @@
             <section class="insights-section hidden" id="summaryCard">
                 <div class="card">
                     <h2><span class="icon">📊</span> Key Insights</h2>
-                    <div class="stats-grid">
+                    <div class="stats-grid" id="statsGrid">
                         <div class="stat-item">
                             <span class="stat-label">Avg. Daily Occupancy</span>
                             <span class="stat-value" id="avgDailyOccupancy">-</span>
@@ -115,7 +115,23 @@
                         <div class="stat-item">
                             <span class="stat-label">Max Occupancy Observed</span>
                             <span class="stat-value" id="maxObserved">-</span>
+                            <small>Absolute worst-case scenario</small>
                         </div>
+                    </div>
+
+                    <div class="custom-analysis-controls">
+                        <h3>Add Custom Confidence Level</h3>
+                        <div class="inline-input-group">
+                            <label for="customPercentInput">Percentile:</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="customPercentInput" placeholder="99" min="1" max="100"
+                                    step="0.1">
+                                <span class="unit">%</span>
+                            </div>
+                            <button id="addCustomBtn" class="secondary-btn" type="button">Calculate</button>
+                        </div>
+                        <small class="hint-text">Enter a percentage (e.g. 99) to see how many desks cover that many
+                            scenarios.</small>
                     </div>
                 </div>
             </section>
@@ -128,7 +144,8 @@
                     BY-NC 4.0</a>;
                 please credit the source for any non-commercial use. The source code
                 is available on
-                <a href="https://github.com/ampercival/office-space-planner.git" rel="noopener" target="_blank">GitHub</a>.
+                <a href="https://github.com/ampercival/office-space-planner.git" rel="noopener"
+                    target="_blank">GitHub</a>.
             </p>
             <p>
                 © <span id="year"></span> Aaron Percival. All rights reserved.
